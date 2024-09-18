@@ -99,7 +99,7 @@ export const signIn_post = async (req, res, next) => {
 
     const { password: pass, ...rest } = user._doc;
     // send respose back:
-    res.status(201).json(rest);
+    res.status(200).json(rest);
   } catch (error) {
     console.log("Error In Creating Sign In Api Route", error.message);
     next(error);
@@ -107,4 +107,14 @@ export const signIn_post = async (req, res, next) => {
 };
 
 // 3-Function To Sign Out:
-export const signOut_post = async (req, res, next) => {};
+export const signOut_post = async (req, res, next) => {
+  try {
+    // clear cookies:
+    res.cookie('jwt_token', '', {maxAge:0})
+    res.status(200).json({message:"User Sign Out Successful!"})
+  } catch (error) {
+    console.log("Error In Creating Sign Out Api Route", error.message);
+    next(error);
+    
+  }
+};
