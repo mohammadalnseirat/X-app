@@ -110,11 +110,22 @@ export const signIn_post = async (req, res, next) => {
 export const signOut_post = async (req, res, next) => {
   try {
     // clear cookies:
-    res.cookie('jwt_token', '', {maxAge:0})
-    res.status(200).json({message:"User Sign Out Successful!"})
+    res.cookie("jwt_token", "", { maxAge: 0 });
+    res.status(200).json({ message: "User Sign Out Successful!" });
   } catch (error) {
     console.log("Error In Creating Sign Out Api Route", error.message);
     next(error);
-    
+  }
+};
+
+// 4- Function to get the current user:
+export const getCurrentUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).select("-password");
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.log("Error In Creating Get Current User Api Route", error.message);
+    next(error);
   }
 };
