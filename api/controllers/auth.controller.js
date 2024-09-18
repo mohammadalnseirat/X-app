@@ -73,7 +73,38 @@ export const signUp_post = async (req, res, next) => {
 };
 
 // 2-Function To Sign In:
-export const signIn_post = async (req, res, next) => {};
+export const signIn_post = async (req, res, next) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password || username === "" || password === "") {
+      return next(handleErrors(400, "Please Enter All Required Fields!"));
+    }
+    // find the user:
+    const user = await User.findOne({ username });
+    if (!user) {
+      return next(handleErrors(400, "Invalid Credentials!"));
+    }
+
+    // check if the password correct:
+    const isMatchedPassword = bcryptjs.compareSync(
+      password,
+      user?.password || 0
+    );
+    if (!isMatchedPassword) {
+      return next(handleErrors(400, "Invalid Credentials!"));
+    }
+
+    // generate token:
+    generateTokenAndSetCookies(user._id, res);
+
+    const { password: pass, ...rest } = user._doc;
+    // send respose back:
+    res.status(201).json(rest);
+  } catch (error) {
+    console.log("Error In Creating Sign In Api Route", error.message);
+    next(error);
+  }
+};
 
 // 3-Function To Sign Out:
 export const signOut_post = async (req, res, next) => {};
