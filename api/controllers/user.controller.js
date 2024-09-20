@@ -1,6 +1,8 @@
 import Notification from "../models/notification.model.js";
 import User from "../models/user.model.js";
 import { handleErrors } from "../utils/error.js";
+import bcryptjs from "bcryptjs";
+import cloudinary from "../config/cloudinary.js";
 
 // 1-Function To Get User Profile:
 export const getUserProfile = async (req, res, next) => {
@@ -98,6 +100,100 @@ export const getSuggestedUsers = async (req, res, next) => {
   } catch (error) {
     console.log(
       "Error In Creating Get Suggested Users Api Route",
+      error.message
+    );
+    next(error);
+  }
+};
+
+// 4-Function To Update User Profile:
+export const updateUserProfile = async (req, res, next) => {
+  // get the data from the body:
+  const { fullName, username, email, currentPassword, newPassword, link, bio } =
+    req.body;
+  let { profileImage, coverImage } = req.body;
+  const userId = req.user._id;
+  try {
+    // find the user:
+    const user = await User.findById(userId);
+    if (!user) {
+      return next(handleErrors(404, "User Not Found!"));
+    }
+    // check the password:
+    if (
+      (!newPassword && currentPassword) ||
+      (!currentPassword && newPassword)
+    ) {
+      return next(
+        handleErrors(
+          400,
+          "Please Provide both Current Password and New Password!"
+        )
+      );
+    }
+    if (newPassword && currentPassword) {
+      // check if the current password correct:
+      const isMatchPassword = bcryptjs.compareSync(
+        currentPassword,
+        user.password
+      );
+      if (!isMatchPassword) {
+        return next(handleErrors(400, "Current password is not correct!"));
+      }
+      if (newPassword.length < 8) {
+        return next(
+          handleErrors(400, "Password must be at least 8 characters!")
+        );
+      }
+
+      // hash the new password:
+      const salt = bcryptjs.genSaltSync(15);
+      user.password = bcryptjs.hashSync(newPassword, salt);
+    }
+
+    // profileImage && coverImage:
+    if (profileImage) {
+      // delete old profile image from cloudinary:
+      if (user.profileImage) {
+        await cloudinary.uploader.destroy(
+          user.profileImage.split("/").pop().split(".")[0]
+        );
+      }
+      const uploadedProfileImage = await cloudinary.uploader.upload(
+        profileImage
+      );
+      profileImage = uploadedProfileImage.secure_url;
+    }
+    if (coverImage) {
+      // delete old cover image from cloudinary:
+      if (user.coverImage) {
+        await cloudinary.uploader.destroy(
+          user.coverImage.split("/").pop().split(".")[0]
+        );
+      }
+      const uploadedCoverImage = await cloudinary.uploader.upload(coverImage);
+      coverImage = uploadedCoverImage.secure_url;
+    }
+
+    // update the user:
+    user.fullName = fullName || user.fullName;
+    user.username = username || user.username;
+    user.email = email || user.email;
+    user.link = link || user.link;
+    user.bio = bio || user.bio;
+    user.profileImage = profileImage || user.profileImage;
+    user.coverImage = coverImage || user.coverImage;
+
+    // save the user:
+    const savedUser = await user.save();
+
+    // password shuould be null in the response:
+    savedUser.password = null;
+
+    return res.status(200).json(savedUser);
+  } catch (error) {
+    console.log(
+      "Error In Creating Update User Profile Api Route",
       error.message
     );
     next(error);
