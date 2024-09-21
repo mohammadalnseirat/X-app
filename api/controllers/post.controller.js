@@ -136,3 +136,32 @@ export const likeUnlikePost = async (req, res, next) => {
     next(error);
   }
 };
+
+// 5-Function to get All Posts:
+export const getAllPosts = async (req, res, next) => {
+  try {
+    // find all posts:
+    const posts = await Post.find()
+      .sort({ createdAt: -1 }) // to get the lastest post in the beginning
+      .populate({
+        path: "user",
+        select: "-password",
+      })
+      .populate({
+        path: "comments.user",
+        select: "-password",
+      });
+    // check the length of the posts:
+    if (posts.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    // send the response:
+    res.status(200).json(posts);
+  } catch (error) {
+    console.log("Error In Creating Get All Posts Api Route", error.message);
+    next(error);
+  }
+};
+
+// populate method we used to get the user who created the post and more information about the post
