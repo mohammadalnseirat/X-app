@@ -165,3 +165,34 @@ export const getAllPosts = async (req, res, next) => {
 };
 
 // populate method we used to get the user who created the post and more information about the post
+
+// 5-Function to get liked posts:
+export const getLikedPosts = async (req, res, next) => {
+  try {
+    // const userId = req.user._id.toString();
+    const userId = req.params.id;
+    // console.log(userId)
+    // find the user:
+    const user = await User.findById(userId);
+    if (!user) {
+      return next(handleErrors(404, "User Not Found!"));
+    }
+
+    // find the liked posts:
+    const likedPosts = await Post.find({ _id: { $in: user.likesPost } })
+      .populate({
+        path: "user",
+        select: "-password",
+      })
+      .populate({
+        path: "comments.user",
+        select: "-password",
+      });
+
+    // send the response:
+    res.status(200).json(likedPosts);
+  } catch (error) {
+    console.log("Error In Creating Get Liked Posts Api Route", error.message);
+    next(error);
+  }
+};

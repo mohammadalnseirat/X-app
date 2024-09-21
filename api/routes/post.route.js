@@ -5,6 +5,7 @@ import {
   createPost,
   deletePost,
   getAllPosts,
+  getLikedPosts,
   likeUnlikePost,
 } from "../controllers/post.controller.js";
 
@@ -15,5 +16,6 @@ router.delete("/deletepost/:id", protectRoute, deletePost);
 router.post("/comment/:id", protectRoute, commentOnPost);
 router.post("/like/:id", protectRoute, likeUnlikePost);
 router.get("/all", protectRoute, getAllPosts);
+router.get("/likes/:id", protectRoute, getLikedPosts);
 
 export default router;
