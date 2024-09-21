@@ -233,3 +233,27 @@ export const getFollowingPosts = async (req, res, next) => {
     next(error);
   }
 };
+
+// 7-Function To Get Posts By User:
+export const getUserPosts = async (req, res, next) => {
+  try {
+    const { username } = req.params;
+    // find the user:
+    const user = await User.findOne({ username });
+    if (!user) {
+      return next(handleErrors(404, "User Not Found!"));
+    }
+
+    // find the posts:
+    const userPosts = await Post.find({ user: user._id })
+      .sort({ createdAt: -1 })
+      .populate({ path: "user", select: "-password" })
+      .populate({ path: "comments.user", select: "-password" });
+
+    // send the response back:
+    res.status(200).json(userPosts);
+  } catch (error) {
+    console.log("Error in Creating get user posts api route", error.message);
+    next(error);
+  }
+};
