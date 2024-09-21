@@ -196,3 +196,40 @@ export const getLikedPosts = async (req, res, next) => {
     next(error);
   }
 };
+
+// 6-Function To Get Following Posts That User Follows:
+export const getFollowingPosts = async (req, res, next) => {
+  try {
+    const userId = req.user._id;
+    // find the user:
+    const user = await User.findById(userId);
+    if (!user) {
+      return next(handleErrors(404, "User Not Found!"));
+    }
+
+    // find the following posts:
+    // 1- following Array:
+    const following = user.following;
+
+    // 2- find the posts:
+    const feedPosts = await Post.find({ user: { $in: following } })
+      .sort({ createdAt: -1 })
+      .populate({
+        path: "user",
+        select: "-password",
+      })
+      .populate({
+        path: "comments.user",
+        select: "-password",
+      });
+
+    // send the response back:
+    res.status(200).json(feedPosts);
+  } catch (error) {
+    console.log(
+      "Error In Creating Get Following Posts Api Route",
+      error.message
+    );
+    next(error);
+  }
+};
