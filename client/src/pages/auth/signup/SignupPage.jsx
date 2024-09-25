@@ -45,7 +45,7 @@ const SignupPage = () => {
           <XSvg className="w-24 lg:hidden mx-auto fill-[#1da1f2]" />
           <h1 className="font-bold flex items-center justify-center gap-2 font-mono text-4xl  text-gray-200">
             Join Today
-            <IoLogoTwitter className="text-[#1da1f2]" />
+            <IoLogoTwitter className="text-[#1da1f2] -mt-[30px]" />
           </h1>
           {/* input start here */}
           <label className="input border border-[#1da1f2] rounded-lg flex items-center gap-2">

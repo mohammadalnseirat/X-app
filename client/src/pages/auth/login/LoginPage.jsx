@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import XSvg from "../../../components/svgs/X";
 import { IoLogoTwitter } from "react-icons/io";
 import { FaUser } from "react-icons/fa";
@@ -75,7 +75,7 @@ const LoginPage = () => {
         </form>
         {/* form end here */}
         <div className="flex flex-col gap-2 mt-5">
-          <p className="text-gray-400 font-semibold flex items-center justify-start gap-1 italic capitalize">
+          <p className="text-gray-400 font-semibold flex items-center gap-1 italic capitalize">
             <VscDebugBreakpointData className="text-[#1da1f2]" />
             {"Don't"} have an account?
           </p>
