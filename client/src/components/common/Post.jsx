@@ -9,25 +9,59 @@ import {
 import { VscDebugBreakpointData } from "react-icons/vsc";
 import { BsSendFill } from "react-icons/bs";
 import { BiRepost } from "react-icons/bi";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 
 const Post = ({ post }) => {
   const [comment, setComment] = useState("");
   const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+
   const isLiked = false;
   const isMyPost = authUser._id === post.user._id;
   const postOwner = post.user;
   const formatedDate = "1h";
   const isCommenting = false;
-  console.log(post);
 
+  // Add useQuery from react-query:
+
+  const queryClient = useQueryClient();
+
+  // Add useMutation from react-query:
+  const { mutate: deletePost, isPending } = useMutation({
+    mutationFn: async () => {
+      try {
+        // create a resposne:
+        const res = await fetch(`/api/v1/posts/deletepost/${post._id}`, {
+          method: "DELETE",
+        });
+
+        // convert data to json:
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message);
+        }
+        if (res.ok) {
+          return data;
+        }
+      } catch (error) {
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: () => {
+      toast.success("Post deleted successfully!");
+      // refetch the data to update the dom:
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+    },
+  });
   // handle comment:
   const handleSubmitComment = (e) => {
     e.preventDefault();
   };
 
   // handle delete post:
-  const handleDeletePost = () => {};
+  const handleDeletePost = () => {
+    deletePost();
+  };
 
   // handle like post:
   const handleLikePost = () => {};
@@ -62,10 +96,17 @@ const Post = ({ post }) => {
           </span>
           {isMyPost && (
             <span className="flex justify-end flex-1">
-              <FaTrash
-                onClick={handleDeletePost}
-                className="cursor-pointer text-red-600"
-              />
+              {!isPending && (
+                <FaTrash
+                  onClick={handleDeletePost}
+                  className="cursor-pointer text-red-600"
+                />
+              )}
+              {isPending && (
+                <>
+                  <span className="loading loading-spinner loading-sm text-red-500"></span>
+                </>
+              )}
             </span>
           )}
         </div>
