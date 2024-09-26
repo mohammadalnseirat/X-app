@@ -6,13 +6,55 @@ import { MdPassword } from "react-icons/md";
 import { VscDebugBreakpointData } from "react-icons/vsc";
 import { BsTwitterX } from "react-icons/bs";
 import { Link } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 const LoginPage = () => {
-  const isError = false;
-
   const [formData, setFormData] = useState({
     username: "",
     password: "",
+  });
+  // use useQuery to navigate to home page when login is successful:
+  const queryClient = useQueryClient();
+  // Add useMutation from react-query:
+  const {
+    mutate: SignInMutation,
+    isError,
+    isPending,
+    error,
+  } = useMutation({
+    mutationFn: async ({ username, password }) => {
+      try {
+        // create a response:
+        const res = await fetch("/api/v1/auth/signin", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, password }),
+        });
+
+        // convert data to json:
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.message || "Failed To Sign In");
+        }
+        if (res.ok) {
+          return data;
+        }
+      } catch (error) {
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success("User signed in successfully!");
+      // refetch the user data :
+      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
   });
 
   // handle change the inputs:
@@ -22,8 +64,8 @@ const LoginPage = () => {
 
   // handle Submit the form:
   const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log(formData);
+    e.preventDefault(); // page wont reload when submitting the form
+    SignInMutation(formData); // call the mutation function
   };
   return (
     <div className="max-w-screen-xl mx-auto h-screen flex">
@@ -62,16 +104,24 @@ const LoginPage = () => {
             />
           </label>
           <button
+            disabled={isPending}
             type="submit"
             className="btn btn-primary uppercase rounded-full text-white font-semibold"
           >
-            Sign In
+            {isPending ? (
+              <>
+                <span className="loading loading-infinity loading-lg text-[#1da1f2]"></span>
+              </>
+            ) : (
+              "Sign In"
+            )}
           </button>
-          {isError && (
+          {/* Another Way to Show The Error */}
+          {/* {isError && (
             <p className="text-red-600 font-semibold capitalize text-center">
-              Something went wrong
+              {error.message}
             </p>
-          )}
+          )} */}
         </form>
         {/* form end here */}
         <div className="flex flex-col gap-2 mt-5">

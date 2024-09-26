@@ -8,26 +8,58 @@ import {
 import { VscDebugBreakpointData } from "react-icons/vsc";
 import { IoLogoTwitter } from "react-icons/io";
 import { FaUser } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 const SignupPage = () => {
-  const isError = false;
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     fullName: "",
     password: "",
   });
+  const querClient = useQueryClient();
+
+  // add useMutation from react-query:
+  const { mutate, isError, isPending, error } = useMutation({
+    mutationFn: async ({ email, username, fullName, password }) => {
+      try {
+        const res = await fetch("/api/v1/auth/signup", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, username, fullName, password }),
+        });
+        const data = await res.json();
+        if (!res.ok)
+          throw new Error(data.message || "Failed to create account");
+        if (res.ok) {
+          return data;
+        }
+      } catch (error) {
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success("Account created successfully");
+      // navigation('/')
+      querClient.invalidateQueries({ queryKey: ["authUser"] });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
 
   // handle change the inputs:
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value.trim() });
   };
-
   // handle Submit the form:
   const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log(formData);
+    e.preventDefault(); // page wont reload when submitting the form
+    mutate(formData);
   };
   return (
     <div className="max-w-screen-xl min-h-screen flex px-10 mx-auto">
@@ -96,16 +128,24 @@ const SignupPage = () => {
           </label>
           {/* input end here */}
           <button
+            disabled={isPending}
             type="submit"
             className="btn btn-primary btn-outline rounded-full uppercase font-semibold  text-white"
           >
-            Sign Up
+            {isPending ? (
+              <>
+                <span className="loading loading-infinity loading-lg text-[#1da1f2]"></span>
+              </>
+            ) : (
+              "Sign Up"
+            )}
           </button>
-          {isError && (
+          {/* Another way to show error */}
+          {/* {isError && (
             <p className="  text-red-600 font-semibold capitalize text-center ">
-              Something went wrong!
+              {error.message}
             </p>
-          )}
+          )} */}
         </form>
         {/* form end here */}
         <div className="flex flex-col lg:w-2/3 mt-5 gap-2">
@@ -126,3 +166,7 @@ const SignupPage = () => {
 };
 
 export default SignupPage;
+
+// NOTE:
+// 1-we use useMutation from react-query when we need to create delete update the data from the server
+// 2-we use useQuery from react-query when we need to get data and fetch the data from the server
