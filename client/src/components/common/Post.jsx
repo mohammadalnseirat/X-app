@@ -9,14 +9,17 @@ import {
 import { VscDebugBreakpointData } from "react-icons/vsc";
 import { BsSendFill } from "react-icons/bs";
 import { BiRepost } from "react-icons/bi";
+import { useQuery } from "@tanstack/react-query";
 
 const Post = ({ post }) => {
   const [comment, setComment] = useState("");
-  const postOwner = post.user;
+  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
   const isLiked = false;
-  const isMyPost = true;
+  const isMyPost = authUser._id === post.user._id;
+  const postOwner = post.user;
   const formatedDate = "1h";
   const isCommenting = false;
+  console.log(post);
 
   // handle comment:
   const handleSubmitComment = (e) => {

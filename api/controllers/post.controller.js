@@ -140,25 +140,23 @@ export const likeUnlikePost = async (req, res, next) => {
 // 5-Function to get All Posts:
 export const getAllPosts = async (req, res, next) => {
   try {
-    // find all posts:
-    const posts = await Post.find()
-      .sort({ createdAt: -1 }) // to get the lastest post in the beginning
-      .populate({
-        path: "user",
-        select: "-password",
-      })
-      .populate({
-        path: "comments.user",
-        select: "-password",
-      });
-    // check the length of the posts:
-    if (posts.length === 0) {
-      return res.status(200).json([]);
-    }
+		const posts = await Post.find()
+			.sort({ createdAt: -1 })
+			.populate({
+				path: "user",
+				select: "-password",
+			})
+			.populate({
+				path: "comments.user",
+				select: "-password",
+			});
 
-    // send the response:
-    res.status(200).json(posts);
-  } catch (error) {
+		if (posts.length === 0) {
+			return res.status(200).json([]);
+		}
+
+		res.status(200).json(posts);
+	} catch (error) {
     console.log("Error In Creating Get All Posts Api Route", error.message);
     next(error);
   }

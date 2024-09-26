@@ -1,34 +1,78 @@
-import React from 'react'
-import PostSkeleton from '../skeleton/PostSkeleton'
-import { POSTS } from '../../utils/db/dummy'
-import Post from './Post'
+import React, { useEffect } from "react";
+import PostSkeleton from "../skeleton/PostSkeleton";
+import Post from "./Post";
+import { useQuery } from "@tanstack/react-query";
 
-const Posts = () => {
-  const loading = false
+const Posts = ({ feedType }) => {
+  // Function to get the end point:
+  const getPostEndPoint = () => {
+    switch (feedType) {
+      case "forYou":
+        return "/api/v1/posts/all";
+      case "following":
+        return "/api/v1/posts/following";
+      default:
+        return "/api/v1/posts/all";
+    }
+  };
+  // onClick={() => setFeedType("following")}
+  // 
+
+  const END_POINT_POST = getPostEndPoint();
+
+  // useQuery to get the data:
+  const {
+    data: posts,
+    isLoading,
+    refetch,
+    isRefetching
+  } = useQuery({
+    queryKey: ["posts"],
+    queryFn: async () => {
+      try {
+        // create a response:
+        const res = await fetch(END_POINT_POST);
+        // convert the data to json:
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || "Failed to fetch posts!");
+        }
+        if (res.ok) {
+          return data;
+        }
+      } catch (error) {
+        throw new Error(error.message);
+      }
+    },
+  });
+
+  // useEffect to fetch the data when changed the tab:
+  useEffect(() => {
+    refetch();
+  }, [feedType, refetch]);
   return (
     <>
-      {loading && (
-        <div className='flex flex-col justify-center'>
-        <PostSkeleton/>
-        <PostSkeleton/>
-        <PostSkeleton/>
+      {(isLoading || isRefetching) && (
+        <div className="flex flex-col justify-center">
+          <PostSkeleton />
+          <PostSkeleton />
+          <PostSkeleton />
         </div>
       )}
-      {!loading && POSTS?.length === 0 && (
-        <p className="text-center my-5 text-gray-200 underline underline-offset-2">No posts in this tab. Switch 👻</p>
+      {(!isLoading || !isRefetching)&& posts?.length === 0 && (
+        <p className="text-center my-5 text-red-500 font-semibold italic font-mono text-lg underline underline-offset-4">
+          No posts in this tab. Switch 👻
+        </p>
       )}
-      {!loading && POSTS?.length > 0 && (
+      {(!isLoading || !isRefetching) && posts && (
         <div>
-          {POSTS.map((post)=>(
-            <Post key={post._id} post={post}/>
+          {posts.map((post) => (
+            <Post key={post._id} post={post} />
           ))}
         </div>
       )}
-      <div>
-
-      </div>
     </>
-  )
-}
+  );
+};
 
-export default Posts
+export default Posts;
