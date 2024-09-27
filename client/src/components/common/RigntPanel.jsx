@@ -1,11 +1,34 @@
 import React from "react";
 import RightPanelSkeleton from "../skeleton/RigntPanelSkeleton";
-import { USERS_FOR_RIGHT_PANEL } from "../../utils/db/dummy";
 import { Link } from "react-router-dom";
 import { TbPointFilled } from "react-icons/tb";
+import { useQuery } from "@tanstack/react-query";
 
 const RigntPanel = () => {
-  const loading = false;
+  const {data:suggestedUsers,isLoading} = useQuery({
+    queryKey: ["suggestedUsers"],
+    queryFn: async()=>{
+      try {
+        const res = await fetch('/api/v1/users/suggestion')
+        const data = await res.json()
+        if(!res.ok){
+          throw new Error(data.message)
+        }
+        if(res.ok){
+          return data
+        }
+      } catch (error) {
+        throw new Error(error.message)
+      }
+    }
+  })
+
+  // check if there is no user in data base:
+  if(suggestedUsers?.length === 0){
+    return(
+      <div className="w-0 md:w-64"></div>
+    )
+  }
   return (
     <div className="hidden lg:block my-4 mx-2">
       <div className="sticky top-2 bg-[#16181C] p-4 border border-[#1DA1F2] shadow-sm rounded-lg ">
@@ -15,7 +38,7 @@ const RigntPanel = () => {
         </p>
         <div className="flex flex-col mt-2 gap-4">
           {/* item */}
-          {loading && (
+          {isLoading && (
             <>
               <RightPanelSkeleton />
               <RightPanelSkeleton />
@@ -23,8 +46,8 @@ const RigntPanel = () => {
               <RightPanelSkeleton />
             </>
           )}
-          {!loading &&
-            USERS_FOR_RIGHT_PANEL?.map((user) => (
+          {!isLoading &&
+            suggestedUsers?.map((user) => (
               <Link
                 to={`/profile/${user.username}`}
                 className="flex  items-center border-b py-1 border-b-[#1DA1F2] justify-between gap-4"
@@ -34,7 +57,7 @@ const RigntPanel = () => {
                   {/* image start here */}
                   <div className="avatar">
                     <div className="w-8 rounded-full">
-                      <img src={user.profileImage} alt="profile-image" />
+                      <img src={user.profileImage || "/avatar-placeholder.png"} alt="profile-image" />
                     </div>
                   </div>
                   {/* image end here */}
