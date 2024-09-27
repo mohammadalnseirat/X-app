@@ -20,7 +20,6 @@ const Post = ({ post }) => {
   const isMyPost = authUser._id === post.user._id;
   const postOwner = post.user;
   const formatedDate = "1h";
-  const isCommenting = false;
 
   // Add useQuery from react-query:
 
@@ -53,9 +52,61 @@ const Post = ({ post }) => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
     },
   });
+
+  // useMutation to add a comment:
+  const {
+    mutate: addCommentOnPost,
+    error,
+    isPending: isCommenting,
+    isError: isCommentError,
+  } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch(`/api/v1/posts/comment/${post._id}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ text: comment }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || "Failed to add comment");
+        }
+        if (res.ok) {
+          return data;
+        }
+      } catch (error) {
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: (updatedCommentss) => {
+      toast.success("Comment added successfully!");
+      setComment("");
+      // refetch the data to update the dom BCZ that is not the best way for UX:
+      // queryClient.invalidateQueries({ queryKey: ["posts"] });
+
+      // instead we will update the cach directly that is the best for the UX:
+      queryClient.setQueryData(["posts"], (oldData) => {
+        return oldData.map((p) => {
+          if (p._id === post._id) {
+            return { ...p, comments: updatedCommentss };
+          }
+          return p;
+        });
+      });
+    },
+    //   onError: (error) => {
+    //     toast.error(error.message);
+    //   },
+  });
   // handle comment:
   const handleSubmitComment = (e) => {
     e.preventDefault();
+    if (isCommenting) {
+      return;
+    }
+    addCommentOnPost();
   };
 
   // handle delete post:
@@ -167,7 +218,7 @@ const Post = ({ post }) => {
         </div>
         {/* title && image end here */}
         {/* like && comment start here */}
-        <div className="flex justify-between mt-5">
+        <div className="flex items-center justify-between mt-5">
           <div className="flex items-center gap-4 justify-between w-2/3">
             {/* comment start here */}
             <div
@@ -184,21 +235,24 @@ const Post = ({ post }) => {
             {/* we are using Dialog from daisyui */}
             <dialog
               id={"comments_modal" + post._id}
-              className="modalborder-none outline-none"
+              className="modal border-none outline-none"
             >
-              <div className="modal-box w-96 rounded border border-sky-600">
+              <div className="modal-box w-96  rounded border border-sky-600">
                 <h3 className="font-bold font-mono text-lg text-gray-300 uppercase mb-4 flex items-center gap-1">
                   <VscDebugBreakpointData className="w-4 h-4 text-[#1DA1F2]" />
                   Comments:
                 </h3>
-                <div className="flex flex-col gap-3 overflow-auto max-h-60">
+                <div className="flex flex-col gap-3 overflow-auto  max-h-60 w-full">
                   {post.comments.length === 0 && (
                     <p className="text-gray-400 text-sm">
                       No comments yet 📝 Be the first one 😉
                     </p>
                   )}
                   {post.comments.map((comment) => (
-                    <div key={comment._id} className="flex gap-2 items-start">
+                    <div
+                      key={comment._id}
+                      className="flex gap-2 items-start w-full mx-auto"
+                    >
                       <div className="avatar">
                         <div className="w-8 rounded-full">
                           <img
@@ -226,18 +280,22 @@ const Post = ({ post }) => {
                   ))}
                 </div>
                 <form
-                  onClick={handleSubmitComment}
+                  onSubmit={handleSubmitComment}
                   className="flex items-center justify-start gap-2 mt-4 border-t border-t-[#1DA1F2]"
                 >
                   <textarea
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    className="p-2 mt-4 w-72 rounded textarea text-md resize-none focus:outline-[#1DA1F2] border border-gray-700"
+                    className="p-2 mt-4 w-96 rounded textarea text-md resize-none border border-sky-500 focus:outline-[#1DA1F2] "
                     placeholder="Add your comment..."
                   />
-                  <button className="btn bg-sky-600 hover:bg-sky-700 btn-sm rounded-full px-2 mt-4 text-white">
+                  <button
+                    className={`btn bg-sky-600  btn-sm rounded-full px-4 mt-4 text-white ${
+                      isCommenting ? "bg-base-100" : ""
+                    }`}
+                  >
                     {isCommenting ? (
-                      <span className="loading loading-spinner loading-md"></span>
+                      <span className="loading loading-infinity loading-md text-sky-500"></span>
                     ) : (
                       <>
                         <BsSendFill />
@@ -245,12 +303,15 @@ const Post = ({ post }) => {
                     )}
                   </button>
                 </form>
-                <form method="dialog" className="modal-action">
-                  <button className="border border-red-500 w-8 h-8 rounded-full text-xl bg-gray-50 text-red-500 font-bold hover:bg-red-500 hover:text-gray-50 ">
-                    X
-                  </button>
-                </form>
+                {isCommentError && (
+                  <p className="text-red-500 text-sm font-semibold text-center mt-2">
+                    {error.message}
+                  </p>
+                )}
               </div>
+              <form method="dialog" className="modal-backdrop">
+                <button className="outline-none">close</button>
+              </form>
             </dialog>
             {/* comment end here */}
             {/* Re post start here */}

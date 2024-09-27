@@ -88,6 +88,8 @@ export const commentOnPost = async (req, res, next) => {
     };
     // update the comment array of the post:
     post.comments.push(newComment);
+    const updatedComments = post.comments;
+    res.status(200).json(updatedComments);
     // save the post:
     await post.save();
     res.status(200).json(post);
