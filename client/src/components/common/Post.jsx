@@ -11,6 +11,7 @@ import { BsSendFill } from "react-icons/bs";
 import { BiRepost } from "react-icons/bi";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
+import { formatPostDate } from "../../utils/date";
 
 const Post = ({ post }) => {
   const [comment, setComment] = useState("");
@@ -19,7 +20,7 @@ const Post = ({ post }) => {
   const isLiked = post.likes.includes(authUser?._id);
   const isMyPost = authUser._id === post.user._id;
   const postOwner = post.user;
-  const formatedDate = "1h";
+  const formatedDate = formatPostDate(post.createdAt);
 
   // Add useQuery from react-query:
 
