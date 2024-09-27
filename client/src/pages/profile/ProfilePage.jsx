@@ -1,5 +1,5 @@
-import React, { useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import ProfileHeaderSkeleton from "../../components/skeleton/ProfileHeaderSkeleton";
 import { FaArrowLeft, FaEdit, FaLink } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
@@ -7,6 +7,8 @@ import { IoCalendarOutline } from "react-icons/io5";
 import { POSTS } from "../../utils/db/dummy";
 import Posts from "../../components/common/Posts";
 import EditProfileModal from "./EditProfileModal";
+import { useQuery } from "@tanstack/react-query";
+import { formatMemberSinceDate } from "../../utils/date";
 
 const ProfilePage = () => {
   const [feedType, setFeedType] = useState("posts");
@@ -15,19 +17,34 @@ const ProfilePage = () => {
   const [profileImage, setProfileImage] = useState(null);
   const coverImageRef = useRef();
   const profileImageRef = useRef();
-  const isLoading = false;
   const isMyProfile = true;
-  const user = {
-    _id: "1",
-    fullName: "John Doe",
-    username: "johndoe",
-    profileImage: "/avatars/boy2.png",
-    coverImage: "/cover.png",
-    bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-    link: "https://youtube.com/@asaprogrammer_",
-    following: ["1", "2", "3"],
-    followers: ["1", "2", "3"],
-  };
+  const { username } = useParams();
+
+  // useQuery to fetch the data:
+  const {
+    data: user,
+    isLoading,
+    refetch,
+    isRefetching,
+  } = useQuery({
+    queryKey: ["userProfile"],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`/api/v1/users/profile/${username}`);
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || "Failed to fetch user");
+        }
+        if (res.ok) {
+          return data;
+        }
+      } catch (error) {
+        throw new Error(error.message);
+      }
+    },
+  });
+
+  const memberSinceDate = formatMemberSinceDate(user?.createdAt);
 
   // handle Image Change:
   const handleImageChange = (e, state) => {
@@ -41,17 +58,22 @@ const ProfilePage = () => {
       reader.readAsDataURL(imageFile);
     }
   };
+  // useEffect to refetch the data:
+  useEffect(() => {
+    refetch();
+  }, [username, refetch]);
+
   return (
     <div className="flex-[4_4_0] border-r border-r-[#1DA1F2] min-h-screen">
       {/* Header Start Here */}
-      {isLoading && <ProfileHeaderSkeleton />}
-      {!isLoading && !user && (
+      {(isLoading || isRefetching) && <ProfileHeaderSkeleton />}
+      {!isLoading && !isRefetching && !user && (
         <p className="text-center mt-4 text-lg uppercase text-gray-300">
           404 | User not found!
         </p>
       )}
       <div className="flex flex-col">
-        {!isLoading && user && (
+        {!isLoading && !isRefetching && user && (
           <>
             <div className="flex gap-10 px-4 py-2 items-center">
               <Link to="/">
@@ -165,7 +187,7 @@ const ProfilePage = () => {
                 <div className="flex gap-2 items-center">
                   <IoCalendarOutline className="w-4 h-4 text-gray-500" />
                   <span className="text-sm text-gray-500">
-                    Joined July 2021
+                    {memberSinceDate}
                   </span>
                 </div>
               </div>
@@ -211,7 +233,7 @@ const ProfilePage = () => {
             </div>
           </>
         )}
-        <Posts />
+        <Posts username={username} feedType={feedType} userId={user?._id} />
       </div>
       {/* Header End Here */}
     </div>
