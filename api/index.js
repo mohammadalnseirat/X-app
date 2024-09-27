@@ -10,7 +10,7 @@ import notificationRoutes from "./routes/notification.route.js";
 dotenv.config();
 const PORT = process.env.PORT || 3000;
 const app = express();
-app.use(express.json());
+app.use(express.json({limit:'10mb'}));  // limit shouldn't be too high to prevent DOS Attacks//
 app.use(cookieParser());
 
 app.use("/api/v1/auth", authRoutes);

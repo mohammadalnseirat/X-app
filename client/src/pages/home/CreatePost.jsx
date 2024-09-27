@@ -5,9 +5,6 @@ import { BsEmojiSmileFill } from "react-icons/bs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 const CreatePost = () => {
-  const data = {
-    profileImage: "/avatars/boy1.png",
-  };
   const [img, setImg] = useState(null);
   const [text, setText] = useState("");
   const imgRef = useRef();
@@ -62,6 +59,17 @@ const CreatePost = () => {
     e.preventDefault();
     createPost({ text, img });
   };
+  // handle image change:
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImg(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   return (
     <div className="flex items-start gap-4 p-4 border-b border-b-[#1DA1F2]">
       {/* avatar start here */}
@@ -90,14 +98,15 @@ const CreatePost = () => {
           <div className="relative w-72 mx-auto">
             <IoCloseSharp
               onClick={() => {
-                setImg(null), imgRef.current.value;
+                setImg(null);
+                imgRef.current.value = null;
               }}
-              className="absolute right-0 top-0 cursor-pointer text-white bg-gray-800 rounded w-5 h-5 "
+              className="absolute right-0 top-4 cursor-pointer text-white bg-red-500 rounded w-5 h-5 "
             />
             <img
               src={img}
               alt="image-create-post"
-              className="w-full object-contain h-72 mx-auto rounded"
+              className="w-full  object-contain h-72 mx-auto rounded"
             />
           </div>
         )}
@@ -111,10 +120,16 @@ const CreatePost = () => {
             />
             <BsEmojiSmileFill className="w-5 h-5 cursor-pointer fill-primary" />
           </div>
-          <input type="file" hidden ref={imgRef} accept="image/*" />
+          <input
+            onChange={handleImageChange}
+            type="file"
+            hidden
+            ref={imgRef}
+            accept="image/*"
+          />
           <button
             className={`btn btn-primary btn-md rounded px-4 py-2  text-white ${
-              isPending ? "rounded-full" : ""
+              isPending ? "rounded-full bg-base-100" : ""
             }`}
           >
             {isPending ? (
