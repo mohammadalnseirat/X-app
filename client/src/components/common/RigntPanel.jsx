@@ -3,31 +3,33 @@ import RightPanelSkeleton from "../skeleton/RigntPanelSkeleton";
 import { Link } from "react-router-dom";
 import { TbPointFilled } from "react-icons/tb";
 import { useQuery } from "@tanstack/react-query";
+import useFollow from "../../hooks/useFollow";
 
 const RigntPanel = () => {
-  const {data:suggestedUsers,isLoading} = useQuery({
+  const { data: suggestedUsers, isLoading } = useQuery({
     queryKey: ["suggestedUsers"],
-    queryFn: async()=>{
+    queryFn: async () => {
       try {
-        const res = await fetch('/api/v1/users/suggestion')
-        const data = await res.json()
-        if(!res.ok){
-          throw new Error(data.message)
+        const res = await fetch("/api/v1/users/suggestion");
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message);
         }
-        if(res.ok){
-          return data
+        if (res.ok) {
+          return data;
         }
       } catch (error) {
-        throw new Error(error.message)
+        throw new Error(error.message);
       }
-    }
-  })
+    },
+  });
+
+  // get the custom hook:
+  const { followUser, isPending } = useFollow();
 
   // check if there is no user in data base:
-  if(suggestedUsers?.length === 0){
-    return(
-      <div className="w-0 md:w-64"></div>
-    )
+  if (suggestedUsers?.length === 0) {
+    return <div className="w-0 md:w-64"></div>;
   }
   return (
     <div className="hidden lg:block my-4 mx-2">
@@ -57,7 +59,10 @@ const RigntPanel = () => {
                   {/* image start here */}
                   <div className="avatar">
                     <div className="w-8 rounded-full">
-                      <img src={user.profileImage || "/avatar-placeholder.png"} alt="profile-image" />
+                      <img
+                        src={user.profileImage || "/avatar-placeholder.png"}
+                        alt="profile-image"
+                      />
                     </div>
                   </div>
                   {/* image end here */}
@@ -72,8 +77,22 @@ const RigntPanel = () => {
                 </div>
                 {/* button start here */}
                 <div>
-                  <button className="btm bg-[#1DA1F2] btn-sm font-medium  rounded-xl hover:rounded-full hover:opacity-90 text-white  ">
-                    Follow
+                  <button
+                    className={`btn bg-[#1DA1F2] btn-sm font-medium  rounded-xl hover:rounded-full hover:opacity-90 text-white ${
+                      isPending ? "bg-base-100" : ""
+                    }`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      followUser(user._id);
+                    }}
+                  >
+                    {isPending ? (
+                      <>
+                        <span className="loading loading-infinity loading-md text-sky-500"></span>
+                      </>
+                    ) : (
+                      "Follow"
+                    )}
                   </button>
                 </div>
                 {/* button end here */}
