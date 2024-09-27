@@ -16,7 +16,7 @@ const Post = ({ post }) => {
   const [comment, setComment] = useState("");
   const { data: authUser } = useQuery({ queryKey: ["authUser"] });
 
-  const isLiked = false;
+  const isLiked = post.likes.includes(authUser?._id);
   const isMyPost = authUser._id === post.user._id;
   const postOwner = post.user;
   const formatedDate = "1h";
@@ -27,7 +27,7 @@ const Post = ({ post }) => {
   const queryClient = useQueryClient();
 
   // Add useMutation from react-query:
-  const { mutate: deletePost, isPending } = useMutation({
+  const { mutate: deletePost, isPending: isDeleting } = useMutation({
     mutationFn: async () => {
       try {
         // create a resposne:
@@ -63,8 +63,49 @@ const Post = ({ post }) => {
     deletePost();
   };
 
+  // Like and Unlike Post using react-query:
+  const { mutate: likeUnLikePost, isPending: isLiking } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch(`/api/v1/posts/like/${post._id}`, {
+          method: "POST",
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message);
+        }
+        if (res.ok) {
+          return data;
+        }
+      } catch (error) {
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: (updatedLikes) => {
+      // that is not the best BCZ will refetch all the posts and update the dom not good for UX:
+      // queryClient.invalidateQueries({queryKey:["posts"]})
+
+      // instead we will update the cach directly that is the best for the UX:
+      queryClient.setQueryData(["posts"], (oldData) => {
+        return oldData.map((p) => {
+          if (p._id === post._id) {
+            return { ...p, likes: updatedLikes };
+          }
+          return p;
+        });
+      });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
   // handle like post:
-  const handleLikePost = () => {};
+  const handleLikePost = () => {
+    if (isLiking) {
+      return;
+    }
+    likeUnLikePost();
+  };
   return (
     <div className="flex gap-2 items-start p-4 border-b border-b-gray-500">
       {/* image start here */}
@@ -96,13 +137,13 @@ const Post = ({ post }) => {
           </span>
           {isMyPost && (
             <span className="flex justify-end flex-1">
-              {!isPending && (
+              {!isDeleting && (
                 <FaTrash
                   onClick={handleDeletePost}
                   className="cursor-pointer text-red-600"
                 />
               )}
-              {isPending && (
+              {isDeleting && (
                 <>
                   <span className="loading loading-spinner loading-sm text-red-500"></span>
                 </>
@@ -225,15 +266,20 @@ const Post = ({ post }) => {
               onClick={handleLikePost}
               className="flex items-center gap-1 cursor-pointer group"
             >
-              {!isLiked && (
+              {isLiking && (
+                <>
+                  <span className="loading loading-infinity loading-md text-red-500"></span>
+                </>
+              )}
+              {!isLiked && !isLiking && (
                 <FaRegHeart className="w-5 h-5 cursor-pointer text-gray-400 group-hover:text-red-500" />
               )}
-              {isLiked && (
+              {isLiked && !isLiking && (
                 <FaRegHeart className="w-5 h-5 cursor-pointer text-red-500 group-hover:text-red-500" />
               )}
               <span
-                className={`text-sm text-gray-400  group-hover:text-red-500 ${
-                  isLiked && "text-red-500"
+                className={`text-sm  group-hover:text-red-500 ${
+                  isLiked ? "text-red-500" : "text-gray-400 "
                 }`}
               >
                 {post.likes.length}

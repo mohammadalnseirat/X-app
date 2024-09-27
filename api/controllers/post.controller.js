@@ -111,7 +111,12 @@ export const likeUnlikePost = async (req, res, next) => {
       // unlike the post:
       await Post.updateOne({ _id: postId }, { $pull: { likes: userId } });
       await User.updateOne({ _id: userId }, { $pull: { likesPost: postId } });
-      res.status(200).json({ message: "Post Unliked Successfully" });
+
+      // when the user unlike the post ,remove the user from the likes array of the post
+      const updatedLikes = post.likes.filter(
+        (id) => id.toString() !== userId.toString()
+      );
+      res.status(200).json(updatedLikes);
     } else {
       // like the post:
       // await Post.updateOne({_id:postId},{$push:{likes:userId}}) // first way to like on the post
@@ -126,7 +131,8 @@ export const likeUnlikePost = async (req, res, next) => {
       });
       // save the notification:
       await notification.save();
-      res.status(200).json({ message: "Post Liked Successfully" });
+      const updatedLikes = post.likes;
+      res.status(200).json(updatedLikes);
     }
   } catch (error) {
     console.log(
@@ -140,23 +146,23 @@ export const likeUnlikePost = async (req, res, next) => {
 // 5-Function to get All Posts:
 export const getAllPosts = async (req, res, next) => {
   try {
-		const posts = await Post.find()
-			.sort({ createdAt: -1 })
-			.populate({
-				path: "user",
-				select: "-password",
-			})
-			.populate({
-				path: "comments.user",
-				select: "-password",
-			});
+    const posts = await Post.find()
+      .sort({ createdAt: -1 })
+      .populate({
+        path: "user",
+        select: "-password",
+      })
+      .populate({
+        path: "comments.user",
+        select: "-password",
+      });
 
-		if (posts.length === 0) {
-			return res.status(200).json([]);
-		}
+    if (posts.length === 0) {
+      return res.status(200).json([]);
+    }
 
-		res.status(200).json(posts);
-	} catch (error) {
+    res.status(200).json(posts);
+  } catch (error) {
     console.log("Error In Creating Get All Posts Api Route", error.message);
     next(error);
   }
