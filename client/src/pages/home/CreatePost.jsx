@@ -2,7 +2,8 @@ import React, { useRef, useState } from "react";
 import { IoCloseSharp } from "react-icons/io5";
 import { CiImageOn } from "react-icons/ci";
 import { BsEmojiSmileFill } from "react-icons/bs";
-
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 const CreatePost = () => {
   const data = {
     profileImage: "/avatars/boy1.png",
@@ -10,22 +11,74 @@ const CreatePost = () => {
   const [img, setImg] = useState(null);
   const [text, setText] = useState("");
   const imgRef = useRef();
-  const isPending = false;
-  const isError = false;
+  // get the authenticated user:
+  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+  const queryClient = useQueryClient();
+
+  // Add useMutation from react-query:
+  const {
+    mutate: createPost,
+    isPending,
+    isError,
+    error,
+  } = useMutation({
+    mutationFn: async ({ text, img }) => {
+      try {
+        // create a response:
+        const res = await fetch("/api/v1/posts/createpost", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ text, img }),
+        });
+
+        // convert data to json:
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message);
+        }
+        if (res.ok) {
+          return data;
+        }
+      } catch (error) {
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: () => {
+      setText("");
+      setImg(null);
+      toast.success("Post created successfully!");
+      // refetch the data to update the dom:
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  // create a function to handle submit:
+  const handleSubmitCreatePost = (e) => {
+    e.preventDefault();
+    createPost({ text, img });
+  };
   return (
     <div className="flex items-start gap-4 p-4 border-b border-b-[#1DA1F2]">
       {/* avatar start here */}
       <div className="avatar">
         <div className="w-8 rounded-full">
           <img
-            src={data?.profileImage || "/avatar-placeholder.png"}
+            src={authUser?.profileImage || "/avatar-placeholder.png"}
             alt="profile-Image"
           />
         </div>
       </div>
       {/* avatar end here */}
       {/* form start here */}
-      <form className="flex flex-col gap-2 w-full">
+      <form
+        onSubmit={handleSubmitCreatePost}
+        className="flex flex-col gap-2 w-full"
+      >
         <textarea
           className="textarea border border-[#1DA1F2] w-full resize-none rounded-lg p-3 focus:outline focus:outline-[#1DA1F2]"
           placeholder="What's happening?!"
@@ -59,15 +112,26 @@ const CreatePost = () => {
             <BsEmojiSmileFill className="w-5 h-5 cursor-pointer fill-primary" />
           </div>
           <input type="file" hidden ref={imgRef} accept="image/*" />
-          <button className="btn btn-primary btn-md rounded px-4  text-white">
-            {isPending ? "Posting..." : "Post"}
+          <button
+            className={`btn btn-primary btn-md rounded px-4 py-2  text-white ${
+              isPending ? "rounded-full" : ""
+            }`}
+          >
+            {isPending ? (
+              <>
+                <span className="loading loading-infinity text-sky-500 loading-sm"></span>
+              </>
+            ) : (
+              "Post"
+            )}
           </button>
         </div>
-        {isError && (
+        {/* second way to show the error */}
+        {/* {isError && (
           <p className="text-red-500 font-semibold text-center">
             Something went wrong
           </p>
-        )}
+        )} */}
       </form>
       {/* form end here */}
     </div>

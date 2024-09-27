@@ -114,11 +114,11 @@ const Post = ({ post }) => {
         {/* title && image start here */}
         <div className="flex flex-col gap-4 overflow-hidden">
           <span className="text-[#1DA1F2] opacity-90 capitalize">
-            {post.title}
+            {post.text}
           </span>
-          {post.image && (
+          {post.img && (
             <img
-              src={post.image}
+              src={post.img}
               alt="post-image"
               className="h-80 object-cover rounded-lg border border-blue-500"
             />
