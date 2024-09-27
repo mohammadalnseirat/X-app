@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { TbPointFilled } from "react-icons/tb";
 import { useQuery } from "@tanstack/react-query";
 import useFollow from "../../hooks/useFollow";
+import {toast} from 'react-hot-toast'
 
 const RigntPanel = () => {
   const { data: suggestedUsers, isLoading } = useQuery({
@@ -83,6 +84,7 @@ const RigntPanel = () => {
                     }`}
                     onClick={(e) => {
                       e.preventDefault();
+                      toast.success("Followed successfully!");
                       followUser(user._id);
                     }}
                   >
