@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { TbPointFilled } from "react-icons/tb";
 import { useQuery } from "@tanstack/react-query";
 import useFollow from "../../hooks/useFollow";
-import {toast} from 'react-hot-toast'
+import { toast } from "react-hot-toast";
 
 const RigntPanel = () => {
   const { data: suggestedUsers, isLoading } = useQuery({
@@ -33,7 +33,7 @@ const RigntPanel = () => {
     return <div className="w-0 md:w-64"></div>;
   }
   return (
-    <div className="hidden lg:block my-4 mx-2">
+    <div className="hidden lg:block  mx-2">
       <div className="sticky top-2 bg-[#16181C] p-4 border border-[#1DA1F2] shadow-sm rounded-lg ">
         <p className="capitalize font-bold text-gray-400 font-mono text-lg flex items-center gap-1">
           <TbPointFilled className="text-[#1DA1F2] text-lg" />

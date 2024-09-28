@@ -2,7 +2,6 @@ import React from "react";
 import { VscDebugBreakpointData } from "react-icons/vsc";
 import { IoSettingsOutline } from "react-icons/io5";
 import { FaHeart, FaTrash, FaUser } from "react-icons/fa";
-import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
@@ -129,7 +128,6 @@ const NotificationPage = () => {
                     </div>
                   </Link>
                 </div>
-                <FaTrash className="w-5 h-5 cursor-pointer text-red-500" />
               </div>
             </div>
           ))}

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import useUpdateUserProfile from "../../hooks/useUpdateUserProfile";
 
 const EditProfileModal = ({ authUser }) => {
   const queryClient = useQueryClient();
@@ -14,40 +15,7 @@ const EditProfileModal = ({ authUser }) => {
     newPassword: "",
   });
 
-  // Use Mutation to update the profile:
-  const { mutate: updateProfile, isPending: isUpdatingProfile } = useMutation({
-    mutationFn: async () => {
-      try {
-        const res = await fetch("/api/v1/users/updateprofile", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.message || "Failed to update profile");
-        }
-        if (res.ok) {
-          return data;
-        }
-      } catch (error) {
-        throw new Error(error.message);
-      }
-    },
-    onSuccess: () => {
-      toast.success("Profile updated successfully");
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["authUser"] }),
-        queryClient.invalidateQueries({ queryKey: ["userProfile"] }),
-      ]);
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
+  const {updateProfile,isUpdatingProfile} = useUpdateUserProfile()
 
   // handle Input Change:
   const handleInputChange = (e) => {
@@ -55,19 +23,19 @@ const EditProfileModal = ({ authUser }) => {
   };
 
   // useEffect to get the authenticated User:
-  useEffect(()=>{
-    if(authUser){
+  useEffect(() => {
+    if (authUser) {
       setFormData({
-        username:authUser.username,
-        fullName:authUser.fullName,
-        email:authUser.email,
-        bio:authUser.bio,
-        link:authUser.link,
-        currentPassword:"",
-        newPassword:""
-      })
+        username: authUser.username,
+        fullName: authUser.fullName,
+        email: authUser.email,
+        bio: authUser.bio,
+        link: authUser.link,
+        currentPassword: "",
+        newPassword: "",
+      });
     }
-  },[authUser])
+  }, [authUser]);
   return (
     <>
       <button
@@ -85,7 +53,7 @@ const EditProfileModal = ({ authUser }) => {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              updateProfile();
+              updateProfile(formData);
             }}
             className="flex flex-col gap-4"
           >
@@ -151,7 +119,11 @@ const EditProfileModal = ({ authUser }) => {
               onChange={handleInputChange}
               className="flex-1 input p-4 input-md border border-sky-500 rounded-xl focus:outline-sky-500"
             />
-            <button className="uppercase btn btn-outline border-1 border-sky-500 hover:bg-sky-400 rounded hover:rounded-full transition-all duration-150">
+            <button
+              className={`uppercase btn btn-outline border-1 border-sky-500  rounded hover:rounded-full transition-all duration-150 ${
+                isUpdatingProfile ? "bg-base-100" : ""
+              }`}
+            >
               {isUpdatingProfile ? (
                 <>
                   <span className="loading loading-infinity loading-md text-sky-500"></span>

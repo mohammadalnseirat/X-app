@@ -11,6 +11,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMemberSinceDate } from "../../utils/date";
 import useFollow from "../../hooks/useFollow";
 import toast from "react-hot-toast";
+import useUpdateUserProfile from "../../hooks/useUpdateUserProfile";
 
 const ProfilePage = () => {
   const [feedType, setFeedType] = useState("posts");
@@ -55,7 +56,7 @@ const ProfilePage = () => {
   const isMyProfile = authUser._id === user?._id;
   const memberSinceDate = formatMemberSinceDate(user?.createdAt);
   const amIFollowing = authUser?.following.includes(user?._id);
-
+  const { data: posts } = useQuery({ queryKey: ["posts"] });
   // handle Image Change:
   const handleImageChange = (e, state) => {
     const imageFile = e.target.files[0];
@@ -73,39 +74,7 @@ const ProfilePage = () => {
     refetch();
   }, [username, refetch]);
 
-  // UseMutation to update the profile image and cover image:
-  const { mutate: updateProfile, isPending: isUpdatingProfile } = useMutation({
-    mutationFn: async () => {
-      try {
-        const res = await fetch("/api/v1/users/updateprofile", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ coverImage, profileImage }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.message || "Failed to update profile image");
-        }
-        if (res.ok) {
-          return data;
-        }
-      } catch (error) {
-        throw new Error(error.message);
-      }
-    },
-    onSuccess: () => {
-      toast.success(" updated successfully"),
-        Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["authUser"] }),
-          queryClient.invalidateQueries({ queryKey: ["userProfile"] }),
-        ]);
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
+  const { updateProfile, isUpdatingProfile } = useUpdateUserProfile();
 
   return (
     <div className="flex-[4_4_0] border-r border-r-[#1DA1F2] min-h-screen">
@@ -128,8 +97,18 @@ const ProfilePage = () => {
                   {user?.fullName}
                 </p>
                 <span className="text-md font-bold px-3 py-[2px] border hover:bg-sky-400 cursor-pointer hover:text-white border-sky-400  rounded-full text-center text-sky-400">
-                  {POSTS?.length}
+                  {posts?.length}
                 </span>
+                {feedType === "posts" && (
+                  <span className="font-bold text-[#1DA1F2]">
+                    {posts?.length > 1 ? "Posts" : "Post"}
+                  </span>
+                )}
+                {feedType === "likes" && (
+                  <span className="font-bold text-[#1DA1F2]">
+                    {posts?.length > 1 ? "Likes" : "Like"}
+                  </span>
+                )}
               </div>
             </div>
             {/* Cover Image Start Here */}
@@ -186,7 +165,7 @@ const ProfilePage = () => {
               {/* User Profile Image End Here */}
             </div>
             <div className="flex justify-end mt-5 px-4">
-              {isMyProfile && <EditProfileModal authUser={authUser}/>}
+              {isMyProfile && <EditProfileModal authUser={authUser} />}
               {!isMyProfile && (
                 <button
                   onClick={() => {
@@ -210,7 +189,11 @@ const ProfilePage = () => {
                   className={`btn btn-primary rounded-full btn-sm text-white px-4 ml-2 ${
                     isUpdatingProfile ? "bg-base-100" : ""
                   }`}
-                  onClick={() => updateProfile()}
+                  onClick={async () => {
+                    await updateProfile({ coverImage, profileImage });
+                    setCoverImage(null);
+                    setProfileImage(null);
+                  }}
                 >
                   {isUpdatingProfile ? (
                     <span className="loading  loading-infinity  text-sky-500 loading-md"></span>
